@@ -28,8 +28,13 @@ class _SentimentAnalysisScreenState extends State<SentimentAnalysisScreen> {
   List<String> sentimentScores = [];
   String handle = "";
   String number = "";
+  bool isLoading = false; // Add loading indicator state
 
   Future<void> fetchSentimentAnalysis() async {
+    setState(() {
+      isLoading = true; // Show loading indicator
+    });
+
     final String url =
         "http://127.0.0.1:5000/senti"; // Replace with your server URL
 
@@ -48,7 +53,7 @@ class _SentimentAnalysisScreenState extends State<SentimentAnalysisScreen> {
 
     if (response.statusCode == 200) {
       final data = jsonDecode(response.body);
-      final results = data['message'];
+      final results = data['results'];
 
       setState(() {
         sentimentResults = ""; // Clear the previous results
@@ -63,14 +68,23 @@ class _SentimentAnalysisScreenState extends State<SentimentAnalysisScreen> {
           sentimentScores.add("Tweet $tweetNumber:");
           sentimentScores.add("Text: $tweetText");
           sentimentScores.add("Sentiment: $sentiment");
-          sentimentScores.add("Sentiment Scores: $scores");
+
+          // Iterate through the scores dictionary and add each key-value pair separately
+          for (var key in scores.keys) {
+            final value = scores[key];
+            sentimentScores.add("$key: $value");
+          }
+
           sentimentScores.add(""); // Add a separator between tweets
         }
+
+        isLoading = false; // Hide loading indicator
       });
     } else {
       setState(() {
         sentimentResults = "Error: Unable to fetch sentiment analysis results.";
         sentimentScores.clear();
+        isLoading = false; // Hide loading indicator
       });
     }
   }
@@ -105,18 +119,21 @@ class _SentimentAnalysisScreenState extends State<SentimentAnalysisScreen> {
               child: Text('Fetch Sentiment Analysis'),
             ),
             SizedBox(height: 20),
-            Expanded(
-              child: SingleChildScrollView(
-                child: Column(
-                  children: sentimentScores
-                      .map((text) => Text(
-                            text,
-                            style: TextStyle(fontSize: 16),
-                          ))
-                      .toList(),
+            if (isLoading)
+              CircularProgressIndicator() // Show loading indicator while fetching data
+            else
+              Expanded(
+                child: SingleChildScrollView(
+                  child: Column(
+                    children: sentimentScores
+                        .map((text) => Text(
+                              text,
+                              style: TextStyle(fontSize: 16),
+                            ))
+                        .toList(),
+                  ),
                 ),
               ),
-            ),
           ],
         ),
       ),
